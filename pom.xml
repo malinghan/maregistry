@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pom.xml
+  maregistry服务注册中心Maven配置文件
+  
+  该文件定义了项目的依赖管理、构建配置和插件设置
+  使用Spring Boot Parent简化配置，遵循约定优于配置的原则
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
+    <!-- POM模型版本 -->
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+      父POM配置
+      使用Spring Boot官方提供的starter-parent，继承其默认配置
+      包括：依赖版本管理、插件配置、资源过滤等
+    -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -10,38 +24,63 @@
         <relativePath/>
     </parent>
 
+    <!-- 项目坐标信息 -->
     <groupId>com.malinghan</groupId>
     <artifactId>maregistry</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>maregistry</name>
+    <description>轻量级分布式服务注册中心</description>
 
+    <!-- 项目属性配置 -->
     <properties>
+        <!-- 指定Java版本为17 -->
         <java.version>17</java.version>
+        <!-- 项目源码编码 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 资源文件编码 -->
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+    
+    <!-- 项目依赖声明 -->
     <dependencies>
+        
+        <!-- Spring Boot Web起步依赖 -->
+        <!-- 包含：Spring MVC、Tomcat、Jackson等Web开发必需组件 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Lombok工具库 -->
+        <!-- 用于简化Java代码，自动生成getter/setter/toString等方法 -->
+        <!-- optional=true 表示该依赖仅在编译时需要，运行时不需要 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        
+        <!-- Spring Boot测试起步依赖 -->
+        <!-- 包含JUnit、Mockito、AssertJ等测试框架 -->
+        <!-- scope=test 表示该依赖仅在测试阶段使用 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        
     </dependencies>
 
+    <!-- 构建配置 -->
     <build>
         <plugins>
+            
+            <!-- Maven编译插件配置 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <!-- 配置注解处理器路径，确保Lombok正常工作 -->
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -51,10 +90,13 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            
+            <!-- Spring Boot Maven插件 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <!-- 排除lombok依赖，避免打包到最终的JAR文件中 -->
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -63,6 +105,7 @@
                     </excludes>
                 </configuration>
             </plugin>
+            
         </plugins>
     </build>
 
