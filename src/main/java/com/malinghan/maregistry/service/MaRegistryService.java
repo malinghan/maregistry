@@ -14,6 +14,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 服务注册中心内存实现类
@@ -44,6 +47,25 @@ public class MaRegistryService implements RegistryService {
      * - 线程安全的操作需要额外同步控制
      */
     private final MultiValueMap<String, InstanceMeta> REGISTRY = new LinkedMultiValueMap<>();
+    
+    /**
+     * 记录每个实例最后心跳时间戳
+     * Key格式: service@scheme://host:port/context
+     * Value: 时间戳（毫秒）
+     */
+    private final Map<String, Long> TIMESTAMPS = new ConcurrentHashMap<>();
+    
+    /**
+     * 记录每个服务的版本号
+     * Key: 服务名称
+     * Value: 版本号
+     */
+    private final Map<String, Long> VERSIONS = new ConcurrentHashMap<>();
+    
+    /**
+     * 全局原子版本号，用于跟踪整个注册中心的变化
+     */
+    private final AtomicLong VERSION = new AtomicLong(0);
 
     /**
      * 注册服务实例
@@ -123,5 +145,81 @@ public class MaRegistryService implements RegistryService {
     @Override
     public List<InstanceMeta> getAllInstances(String service) {
         return REGISTRY.get(service);
+    }
+
+    /**
+     * 心跳续约单个服务
+     * 
+     * 更新指定服务实例的心跳时间戳，并递增相关版本号。
+     * 
+     * @param service 服务名称
+     * @param instance 服务实例元数据
+     * @return 续约后的实例信息
+     */
+    @Override
+    public synchronized InstanceMeta renew(String service, InstanceMeta instance) {
+        // 生成时间戳key
+        String timestampKey = service + "@" + instance.toUrl();
+        
+        // 更新时间戳
+        TIMESTAMPS.put(timestampKey, System.currentTimeMillis());
+        
+        // 递增服务版本号
+        VERSIONS.merge(service, 1L, Long::sum);
+        
+        // 递增全局版本号
+        VERSION.incrementAndGet();
+        
+        return instance;
+    }
+
+    /**
+     * 批量心跳续约多个服务
+     * 
+     * 一次性更新多个服务实例的心跳时间戳。
+     * 
+     * @param services 服务名称数组
+     * @param instance 服务实例元数据
+     * @return 续约后的实例信息
+     */
+    @Override
+    public synchronized InstanceMeta renews(String[] services, InstanceMeta instance) {
+        // 为每个服务执行续约操作
+        for (String service : services) {
+            String timestampKey = service + "@" + instance.toUrl();
+            TIMESTAMPS.put(timestampKey, System.currentTimeMillis());
+            VERSIONS.merge(service, 1L, Long::sum);
+        }
+        
+        // 递增全局版本号（只递增一次）
+        VERSION.incrementAndGet();
+        
+        return instance;
+    }
+
+    /**
+     * 获取单个服务的版本号
+     * 
+     * @param service 服务名称
+     * @return 服务版本号，如果服务不存在则返回0
+     */
+    @Override
+    public Long version(String service) {
+        return VERSIONS.getOrDefault(service, 0L);
+    }
+
+    /**
+     * 批量获取多个服务的版本号
+     * 
+     * @param services 服务名称数组
+     * @return 服务名称到版本号的映射关系
+     */
+    @Override
+    public Map<String, Long> versions(String[] services) {
+        Map<String, Long> result = new ConcurrentHashMap<>();
+        for (String service : services) {
+            result.put(service, VERSIONS.getOrDefault(service, 0L));
+        }
+        return result;
     }
 }

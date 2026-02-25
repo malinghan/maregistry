@@ -51,6 +51,10 @@
 - `service/RegistryService.java`（renew/version/versions 部分）
 - `RegistryController.java`（/renew /renews /version /versions）
 
+**测试：** 构造测试场景，输出直观结果验证功能，不要单元测试版本的测试
+
+**文档总结:**   将该version的代码结构、核心功能实现、测试流程输出到v2.0.md
+
 ---
 
 ## v3 — 健康检查与自动摘除

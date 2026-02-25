@@ -11,6 +11,7 @@ package com.malinghan.maregistry.service;
 import com.malinghan.maregistry.model.InstanceMeta;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 服务注册接口
@@ -70,4 +71,63 @@ public interface RegistryService {
      * - 监控系统统计服务实例数量
      */
     List<InstanceMeta> getAllInstances(String service);
+
+    /**
+     * 心跳续约单个服务
+     * 
+     * 更新指定服务实例的心跳时间戳，表明该实例仍然存活。
+     * 
+     * @param service 服务名称
+     * @param instance 服务实例元数据
+     * @return 续约后的实例信息
+     * 
+     * 实现细节：
+     * - 更新该实例的时间戳记录
+     * - 递增该服务的版本号
+     * - 更新全局版本号
+     */
+    InstanceMeta renew(String service, InstanceMeta instance);
+
+    /**
+     * 批量心跳续约多个服务
+     * 
+     * 一次性更新多个服务实例的心跳时间戳，减少网络请求次数。
+     * 
+     * @param services 服务名称数组
+     * @param instance 服务实例元数据
+     * @return 续约后的实例信息
+     * 
+     * 使用场景：
+     * - 客户端同时维护多个服务的连接
+     * - 减少频繁的心跳请求
+     */
+    InstanceMeta renews(String[] services, InstanceMeta instance);
+
+    /**
+     * 获取单个服务的版本号
+     * 
+     * 返回指定服务的当前版本号，用于客户端感知服务变化。
+     * 
+     * @param service 服务名称
+     * @return 服务版本号
+     * 
+     * 版本号用途：
+     * - 客户端缓存版本号，定期轮询对比
+     * - 版本变化时才重新拉取实例列表
+     * - 减少不必要的网络传输
+     */
+    Long version(String service);
+
+    /**
+     * 批量获取多个服务的版本号
+     * 
+     * 一次性获取多个服务的版本号信息。
+     * 
+     * @param services 服务名称数组
+     * @return 服务名称到版本号的映射关系
+     * 
+     * 返回示例：
+     * {"UserService": 10, "OrderService": 5, "PaymentService": 3}
+     */
+    Map<String, Long> versions(String[] services);
 }

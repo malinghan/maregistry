@@ -13,6 +13,7 @@ import com.malinghan.maregistry.service.RegistryService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 服务注册中心REST控制器
@@ -157,5 +158,100 @@ public class MaRegistryController {
     @GetMapping("/findAll")
     public List<InstanceMeta> findAll(@RequestParam String service) {
         return registryService.getAllInstances(service);
+    }
+
+    /**
+     * 心跳续约单个服务接口
+     * 
+     * 客户端定期调用此接口报告服务实例仍然存活。
+     * 
+     * @param service 服务名称
+     * @param instance 服务实例信息
+     * @return 续约确认信息
+     * 
+     * 请求示例：
+     * POST /renew?service=com.example.UserService
+     * Content-Type: application/json
+     * {
+     *   "scheme": "http",
+     *   "host": "192.168.1.100",
+     *   "port": 8080,
+     *   "context": "userservice"
+     * }
+     */
+    @PostMapping("/renew")
+    public InstanceMeta renew(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        return registryService.renew(service, instance);
+    }
+
+    /**
+     * 批量心跳续约多个服务接口
+     * 
+     * 客户端可以一次性报告多个服务的存活状态。
+     * 
+     * @param services 逗号分隔的服务名称列表
+     * @param instance 服务实例信息
+     * @return 续约确认信息
+     * 
+     * 请求示例：
+     * POST /renews?services=com.example.UserService,com.example.OrderService
+     * Content-Type: application/json
+     * {
+     *   "scheme": "http",
+     *   "host": "192.168.1.100",
+     *   "port": 8080,
+     *   "context": "userservice"
+     * }
+     */
+    @PostMapping("/renews")
+    public InstanceMeta renews(@RequestParam String services, @RequestBody InstanceMeta instance) {
+        String[] serviceArray = services.split(",");
+        return registryService.renews(serviceArray, instance);
+    }
+
+    /**
+     * 获取单个服务版本号接口
+     * 
+     * 客户端可以通过此接口获取服务的当前版本号，用于判断是否需要更新实例列表。
+     * 
+     * @param service 服务名称
+     * @return 服务版本号
+     * 
+     * 请求示例：
+     * POST /version?service=com.example.UserService
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * 15
+     */
+    @PostMapping("/version")
+    public Long version(@RequestParam String service) {
+        return registryService.version(service);
+    }
+
+    /**
+     * 批量获取多个服务版本号接口
+     * 
+     * 客户端可以一次性获取多个服务的版本号信息。
+     * 
+     * @param services 逗号分隔的服务名称列表
+     * @return 服务名称到版本号的映射
+     * 
+     * 请求示例：
+     * POST /versions?services=com.example.UserService,com.example.OrderService
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * {
+     *   "com.example.UserService": 15,
+     *   "com.example.OrderService": 8
+     * }
+     */
+    @PostMapping("/versions")
+    public Map<String, Long> versions(@RequestParam String services) {
+        String[] serviceArray = services.split(",");
+        return registryService.versions(serviceArray);
     }
 }
