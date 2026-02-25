@@ -8,6 +8,7 @@
 package com.malinghan.maregistry.cluster;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.List;
  * - 易于扩展：支持未来添加新的配置项
  */
 @Component
+@Primary
 @ConfigurationProperties(prefix = "maregistry")
 public class MaRegistryConfigProperties {
     
