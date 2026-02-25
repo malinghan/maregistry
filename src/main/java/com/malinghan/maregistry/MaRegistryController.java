@@ -8,13 +8,18 @@
 
 package com.malinghan.maregistry;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.malinghan.maregistry.cluster.Cluster;
 import com.malinghan.maregistry.cluster.Election;
 import com.malinghan.maregistry.cluster.Server;
+import com.malinghan.maregistry.cluster.Snapshot;
 import com.malinghan.maregistry.model.InstanceMeta;
 import com.malinghan.maregistry.service.RegistryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +53,7 @@ public class MaRegistryController {
     private Cluster cluster;
     
     @Autowired
-    private Election election;
+    private ObjectMapper objectMapper;
 
     /**
      * 构造函数注入RegistryService依赖
@@ -370,6 +375,46 @@ public class MaRegistryController {
             );
         } else {
             return Map.of("message", "无法获取当前节点信息");
+        }
+    }
+    
+    /**
+     * 获取数据快照接口
+     * 
+     * 返回当前节点的完整注册数据快照，供集群数据同步使用。
+     * 
+     * @return 数据快照JSON
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * {
+     *   "REGISTRY": {
+     *     "com.example.UserService": [
+     *       {
+     *         "scheme": "http",
+     *         "host": "192.168.1.100",
+     *         "port": 8080,
+     *         "context": "userservice"
+     *       }
+     *     ]
+     *   },
+     *   "VERSIONS": {
+     *     "com.example.UserService": 10
+     *   },
+     *   "TIMESTAMPS": {
+     *     "com.example.UserService@http://192.168.1.100:8080/userservice": 1708876800000
+     *   },
+     *   "version": 15
+     * }
+     */
+    @GetMapping("/snapshot")
+    public String getSnapshot() {
+        try {
+            Snapshot snapshot = registryService.snapshot();
+            return objectMapper.writeValueAsString(snapshot);
+        } catch (Exception e) {
+            throw new RuntimeException("生成快照失败", e);
         }
     }
 }

@@ -8,6 +8,7 @@
 
 package com.malinghan.maregistry.service;
 
+import com.malinghan.maregistry.cluster.Snapshot;
 import com.malinghan.maregistry.model.InstanceMeta;
 
 import java.util.List;
@@ -130,4 +131,32 @@ public interface RegistryService {
      * {"UserService": 10, "OrderService": 5, "PaymentService": 3}
      */
     Map<String, Long> versions(String[] services);
+    
+    /**
+     * 生成当前数据快照
+     * 
+     * 创建包含当前所有注册数据的快照对象，用于集群间数据同步。
+     * 
+     * @return 当前数据快照
+     * 
+     * 使用场景：
+     * - Leader节点定期生成快照供Follower同步
+     * - 集群扩容时新节点初始化数据
+     * - 故障恢复时数据备份
+     */
+    Snapshot snapshot();
+    
+    /**
+     * 从快照恢复数据
+     * 
+     * 使用提供的快照数据恢复注册中心状态。
+     * 
+     * @param snapshot 要恢复的数据快照
+     * 
+     * 注意事项：
+     * - 该操作会覆盖当前所有数据
+     * - 通常由Follower节点在同步时调用
+     * - 需要保证线程安全
+     */
+    void restore(Snapshot snapshot);
 }

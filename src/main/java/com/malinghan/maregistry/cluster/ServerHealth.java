@@ -7,10 +7,9 @@
 
 package com.malinghan.maregistry.cluster;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.malinghan.maregistry.http.HttpInvoker;
 import com.malinghan.maregistry.service.MaRegistryService;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,14 +64,19 @@ public class ServerHealth {
     private MaRegistryService registryService;
     
     /**
+     * HTTP调用器
+     */
+    private HttpInvoker httpInvoker;
+    
+    /**
+     * JSON序列化工具
+     */
+    private ObjectMapper objectMapper;
+    
+    /**
      * 定时任务调度器
      */
     private ScheduledExecutorService scheduler;
-    
-    /**
-     * HTTP客户端
-     */
-    private OkHttpClient httpClient;
     
     /**
      * 初始化健康检查器
@@ -81,12 +85,11 @@ public class ServerHealth {
     public void init() {
         log.info("初始化集群健康检查器，检查间隔: {}秒", HEALTH_CHECK_INTERVAL);
         
-        // 初始化HTTP客户端
-        httpClient = new OkHttpClient.Builder()
-                .connectTimeout(HTTP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .readTimeout(HTTP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(HTTP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .build();
+        // 初始化HTTP调用器
+        httpInvoker = HttpInvoker.getDefault();
+        
+        // 初始化JSON序列化工具
+        objectMapper = new ObjectMapper();
         
         // 初始化调度器
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -123,11 +126,6 @@ public class ServerHealth {
                 scheduler.shutdownNow();
                 Thread.currentThread().interrupt();
             }
-        }
-        
-        if (httpClient != null) {
-            httpClient.dispatcher().executorService().shutdown();
-            httpClient.connectionPool().evictAll();
         }
         
         log.info("集群健康检查器已关闭");
@@ -207,14 +205,10 @@ public class ServerHealth {
     private boolean checkServerAlive(Server server) {
         String infoUrl = server.getUrl() + "/info";
         
-        Request request = new Request.Builder()
-                .url(infoUrl)
-                .get()
-                .build();
-        
-        try (Response response = httpClient.newCall(request).execute()) {
-            return response.isSuccessful();
-        } catch (IOException e) {
+        try {
+            String response = httpInvoker.get(infoUrl);
+            return response != null && !response.isEmpty();
+        } catch (Exception e) {
             log.debug("节点 {} 不可达: {}", server.getUrl(), e.getMessage());
             return false;
         }
@@ -238,14 +232,33 @@ public class ServerHealth {
         }
         
         try {
-            // 这里应该实现实际的数据同步逻辑
-            // 由于篇幅限制，这里只记录日志
             log.debug("Follower节点从Leader {} 同步数据快照", leader.getUrl());
             
-            // 实际实现应该：
             // 1. 调用Leader的/snapshot接口获取快照
-            // 2. 比较版本号决定是否需要同步
-            // 3. 执行数据恢复操作
+            String snapshotUrl = leader.getUrl() + "/snapshot";
+            String snapshotJson = httpInvoker.get(snapshotUrl);
+            
+            if (snapshotJson == null || snapshotJson.isEmpty()) {
+                log.warn("从Leader获取快照失败: 返回空数据");
+                return;
+            }
+            
+            // 2. 反序列化快照数据
+            Snapshot leaderSnapshot = objectMapper.readValue(snapshotJson, Snapshot.class);
+            
+            // 3. 比较版本号决定是否需要同步
+            long localVersion = registryService.snapshot().getVersion();
+            if (!leaderSnapshot.shouldSync(localVersion)) {
+                log.debug("本地数据版本({}) >= Leader数据版本({})，无需同步", 
+                         localVersion, leaderSnapshot.getVersion());
+                return;
+            }
+            
+            // 4. 执行数据恢复操作
+            log.info("开始从Leader同步数据，版本: {} -> {}", 
+                    localVersion, leaderSnapshot.getVersion());
+            registryService.restore(leaderSnapshot);
+            log.info("数据同步完成，当前版本: {}", leaderSnapshot.getVersion());
             
         } catch (Exception e) {
             log.error("从Leader同步数据失败: {}", leader.getUrl(), e);

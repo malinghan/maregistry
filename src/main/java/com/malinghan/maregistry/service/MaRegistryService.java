@@ -8,6 +8,7 @@
 
 package com.malinghan.maregistry.service;
 
+import com.malinghan.maregistry.cluster.Snapshot;
 import com.malinghan.maregistry.model.InstanceMeta;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -66,6 +67,11 @@ public class MaRegistryService implements RegistryService {
      * 全局原子版本号，用于跟踪整个注册中心的变化
      */
     private final AtomicLong VERSION = new AtomicLong(0);
+    
+    /**
+     * 快照版本号，用于集群数据同步
+     */
+    private final AtomicLong SNAPSHOT_VERSION = new AtomicLong(0);
 
     /**
      * 注册服务实例
@@ -232,5 +238,80 @@ public class MaRegistryService implements RegistryService {
      */
     public Map<String, Long> getTimestamps() {
         return TIMESTAMPS;
+    }
+    
+    /**
+     * 生成当前数据快照
+     * 
+     * 创建包含当前所有注册数据的快照对象，用于集群间数据同步。
+     * 
+     * @return 当前数据快照
+     * 
+     * 实现细节：
+     * - 使用synchronized保证并发安全
+     * - 创建数据副本避免外部修改影响内部状态
+     * - 递增快照版本号
+     */
+    @Override
+    public synchronized Snapshot snapshot() {
+        // 递增快照版本号
+        long snapshotVersion = SNAPSHOT_VERSION.incrementAndGet();
+        
+        // 创建快照对象
+        Snapshot snapshot = new Snapshot(
+            new ConcurrentHashMap<>(REGISTRY), // 注册表数据副本
+            VERSIONS,      // 版本映射
+            TIMESTAMPS,    // 时间戳信息
+            snapshotVersion // 快照版本号
+        );
+        
+        return snapshot;
+    }
+    
+    /**
+     * 从快照恢复数据
+     * 
+     * 使用提供的快照数据恢复注册中心状态。
+     * 
+     * @param snapshot 要恢复的数据快照
+     * 
+     * 实现细节：
+     * - 使用synchronized保证并发安全
+     * - 清空现有数据后再恢复
+     * - 更新快照版本号
+     */
+    @Override
+    public synchronized void restore(Snapshot snapshot) {
+        if (snapshot == null) return;
+        
+        // 清空现有数据
+        REGISTRY.clear();
+        VERSIONS.clear();
+        TIMESTAMPS.clear();
+        
+        // 恢复注册表数据
+        if (snapshot.getREGISTRY() != null) {
+            snapshot.getREGISTRY().forEach((key, value) -> {
+                if (value != null) {
+                    REGISTRY.addAll(key, value);
+                }
+            });
+        }
+        
+        // 恢复版本信息
+        if (snapshot.getVERSIONS() != null) {
+            VERSIONS.putAll(snapshot.getVERSIONS());
+        }
+        
+        // 恢复时间戳
+        if (snapshot.getTIMESTAMPS() != null) {
+            TIMESTAMPS.putAll(snapshot.getTIMESTAMPS());
+        }
+        
+        // 更新快照版本号
+        SNAPSHOT_VERSION.set(snapshot.getVersion());
+        
+        // 更新全局版本号
+        VERSION.set(Math.max(VERSION.get(), snapshot.getVersion()));
     }
 }
