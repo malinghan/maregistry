@@ -7,8 +7,10 @@
 
 package com.malinghan.maregistry;
 
+import com.malinghan.maregistry.cluster.MaRegistryConfigProperties;
 import com.malinghan.maregistry.health.HealthChecker;
 import com.malinghan.maregistry.health.MaHealthChecker;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
  * - 集中管理配置参数和系统设置
  */
 @Configuration
+@EnableConfigurationProperties(MaRegistryConfigProperties.class)
 public class MaRegistryConfig {
     
     /**

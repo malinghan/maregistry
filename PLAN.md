@@ -114,6 +114,10 @@
 - `MaRegistryConfig.java`（cluster bean）
 - `MaRegistryController.java`（/info /cluster /leader /sl + checkLeader）
 
+**测试：** 构造测试场景，输出直观结果验证功能，不要单元测试版本的测试
+
+**文档总结:**   将该version的代码结构、核心功能实现、测试流程输出到v3.0.md
+
 ---
 
 ## v5 — 快照同步

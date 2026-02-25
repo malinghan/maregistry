@@ -8,8 +8,12 @@
 
 package com.malinghan.maregistry;
 
+import com.malinghan.maregistry.cluster.Cluster;
+import com.malinghan.maregistry.cluster.Election;
+import com.malinghan.maregistry.cluster.Server;
 import com.malinghan.maregistry.model.InstanceMeta;
 import com.malinghan.maregistry.service.RegistryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,6 +43,12 @@ public class MaRegistryController {
      * 支持依赖注入和单元测试mock。
      */
     private final RegistryService registryService;
+    
+    @Autowired
+    private Cluster cluster;
+    
+    @Autowired
+    private Election election;
 
     /**
      * 构造函数注入RegistryService依赖
@@ -253,5 +263,113 @@ public class MaRegistryController {
     public Map<String, Long> versions(@RequestParam String services) {
         String[] serviceArray = services.split(",");
         return registryService.versions(serviceArray);
+    }
+
+    /**
+     * 获取当前节点信息接口
+     * 
+     * 返回当前节点的基本信息和状态。
+     * 
+     * @return 当前节点信息
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * {
+     *   "url": "http://192.168.1.100:8081",
+     *   "status": true,
+     *   "leader": false,
+     *   "version": 10
+     * }
+     */
+    @GetMapping("/info")
+    public Server getInfo() {
+        return cluster.getMyself();
+    }
+
+    /**
+     * 获取集群所有节点接口
+     * 
+     * 返回集群中所有节点的信息和状态。
+     * 
+     * @return 集群节点列表
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * [
+     *   {
+     *     "url": "http://192.168.1.100:8081",
+     *     "status": true,
+     *     "leader": true,
+     *     "version": 10
+     *   },
+     *   {
+     *     "url": "http://192.168.1.101:8081",
+     *     "status": true,
+     *     "leader": false,
+     *     "version": 8
+     *   }
+     * ]
+     */
+    @GetMapping("/cluster")
+    public List<Server> getCluster() {
+        return cluster.getServers();
+    }
+
+    /**
+     * 获取当前Leader节点接口
+     * 
+     * 返回当前集群的Leader节点信息。
+     * 
+     * @return Leader节点信息，如果没有Leader则返回null
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * {
+     *   "url": "http://192.168.1.100:8081",
+     *   "status": true,
+     *   "leader": true,
+     *   "version": 10
+     * }
+     */
+    @GetMapping("/leader")
+    public Server getLeader() {
+        return cluster.getLeader();
+    }
+
+    /**
+     * 手动设置Leader接口（测试用）
+     * 
+     * 强制将当前节点设置为Leader，用于测试场景。
+     * 
+     * @return 操作结果信息
+     * 
+     * 响应示例：
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * {
+     *   "message": "当前节点已设置为Leader",
+     *   "leader": {
+     *     "url": "http://192.168.1.100:8081",
+     *     "status": true,
+     *     "leader": true,
+     *     "version": 10
+     *   }
+     * }
+     */
+    @PostMapping("/sl")
+    public Map<String, Object> setLeader() {
+        Server myself = cluster.getMyself();
+        if (myself != null) {
+            cluster.setLeader(myself);
+            return Map.of(
+                "message", "当前节点已设置为Leader",
+                "leader", myself
+            );
+        } else {
+            return Map.of("message", "无法获取当前节点信息");
+        }
     }
 }
