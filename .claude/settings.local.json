@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn test -Dtest=MaRegistryV1Test 2>&1)"
+    ]
+  }
+}
