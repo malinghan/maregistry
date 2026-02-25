@@ -240,7 +240,7 @@ public class MaRegistryController {
      * Content-Type: application/json
      * 15
      */
-    @PostMapping("/version")
+    @GetMapping("/version")
     public Long version(@RequestParam String service) {
         return registryService.version(service);
     }
