@@ -1,7 +1,7 @@
-package com.malinghan.marpc.maregistry;
+package com.malinghan.maregistry;
 
-import com.malinghan.marpc.maregistry.model.InstanceMeta;
-import com.malinghan.marpc.maregistry.service.MaRegistryService;
+import com.malinghan.maregistry.model.InstanceMeta;
+import com.malinghan.maregistry.service.MaRegistryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

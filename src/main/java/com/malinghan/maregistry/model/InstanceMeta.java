@@ -1,4 +1,4 @@
-package com.malinghan.marpc.maregistry.model;
+package com.malinghan.maregistry.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

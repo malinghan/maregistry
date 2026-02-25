@@ -1,4 +1,4 @@
-package com.malinghan.marpc.maregistry;
+package com.malinghan.maregistry;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

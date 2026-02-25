@@ -1,4 +1,4 @@
-package com.malinghan.marpc.maregistry;
+package com.malinghan.maregistry;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,7 +1,7 @@
-package com.malinghan.marpc.maregistry;
+package com.malinghan.maregistry;
 
-import com.malinghan.marpc.maregistry.model.InstanceMeta;
-import com.malinghan.marpc.maregistry.service.RegistryService;
+import com.malinghan.maregistry.model.InstanceMeta;
+import com.malinghan.maregistry.service.RegistryService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

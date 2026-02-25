@@ -1,6 +1,6 @@
-package com.malinghan.marpc.maregistry.service;
+package com.malinghan.maregistry.service;
 
-import com.malinghan.marpc.maregistry.model.InstanceMeta;
+import com.malinghan.maregistry.model.InstanceMeta;
 
 import java.util.List;
 
