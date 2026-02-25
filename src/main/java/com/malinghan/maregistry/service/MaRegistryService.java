@@ -222,4 +222,15 @@ public class MaRegistryService implements RegistryService {
         }
         return result;
     }
+    
+    /**
+     * 获取所有时间戳数据
+     * 
+     * 供健康检查器使用，用于检查实例的存活状态。
+     * 
+     * @return 时间戳映射关系，key为service@url格式，value为时间戳
+     */
+    public Map<String, Long> getTimestamps() {
+        return TIMESTAMPS;
+    }
 }
