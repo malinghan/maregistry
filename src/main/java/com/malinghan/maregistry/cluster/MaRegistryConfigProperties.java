@@ -68,6 +68,12 @@ public class MaRegistryConfigProperties {
      * 默认值：15000ms（15秒）
      */
     private int nodeTimeout = 15000;
+
+    private boolean persistenceEnabled = true;
+
+    private String snapshotPath = "./data/registry-snapshot.json";
+
+    private int snapshotInterval = 30;
     
     // Getter和Setter方法
     public List<String> getServerList() {
@@ -105,11 +111,35 @@ public class MaRegistryConfigProperties {
     public int getNodeTimeout() {
         return nodeTimeout;
     }
-    
+
     public void setNodeTimeout(int nodeTimeout) {
         this.nodeTimeout = nodeTimeout;
     }
-    
+
+    public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
+    }
+
+    public void setPersistenceEnabled(boolean persistenceEnabled) {
+        this.persistenceEnabled = persistenceEnabled;
+    }
+
+    public String getSnapshotPath() {
+        return snapshotPath;
+    }
+
+    public void setSnapshotPath(String snapshotPath) {
+        this.snapshotPath = snapshotPath;
+    }
+
+    public int getSnapshotInterval() {
+        return snapshotInterval;
+    }
+
+    public void setSnapshotInterval(int snapshotInterval) {
+        this.snapshotInterval = snapshotInterval;
+    }
+
     /**
      * 验证配置的有效性
      * 

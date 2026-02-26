@@ -8,8 +8,15 @@
 
 package com.malinghan.maregistry.service;
 
+import com.malinghan.maregistry.cluster.MaRegistryConfigProperties;
 import com.malinghan.maregistry.cluster.Snapshot;
 import com.malinghan.maregistry.model.InstanceMeta;
+import com.malinghan.maregistry.store.RegistryStore;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -17,6 +24,9 @@ import org.springframework.util.MultiValueMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -38,15 +48,16 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class MaRegistryService implements RegistryService {
 
-    /**
-     * 核心注册表存储结构
-     * 
-     * 使用LinkedMultiValueMap实现：
-     * - Key: 服务名称（String）
-     * - Value: 该服务的所有实例列表（List<InstanceMeta>）
-     * - 保持插入顺序，便于遍历
-     * - 线程安全的操作需要额外同步控制
-     */
+    private static final Logger log = LoggerFactory.getLogger(MaRegistryService.class);
+
+    @Autowired(required = false)
+    private RegistryStore store;
+
+    @Autowired
+    private MaRegistryConfigProperties properties;
+
+    private ScheduledExecutorService scheduler;
+
     private final MultiValueMap<String, InstanceMeta> REGISTRY = new LinkedMultiValueMap<>();
     
     /**
@@ -72,6 +83,30 @@ public class MaRegistryService implements RegistryService {
      * 快照版本号，用于集群数据同步
      */
     private final AtomicLong SNAPSHOT_VERSION = new AtomicLong(0);
+
+    @PostConstruct
+    public void init() {
+        if (store != null) {
+            Snapshot snapshot = store.load();
+            if (snapshot != null) {
+                restore(snapshot);
+                log.info("Restored registry from snapshot, version={}", snapshot.getVersion());
+            }
+            int interval = properties.getSnapshotInterval();
+            scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> store.save(snapshot()), interval, interval, TimeUnit.SECONDS);
+        }
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (store != null) {
+            store.save(snapshot());
+        }
+        if (scheduler != null) {
+            scheduler.shutdown();
+        }
+    }
 
     /**
      * 注册服务实例

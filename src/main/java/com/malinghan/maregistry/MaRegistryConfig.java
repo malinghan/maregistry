@@ -7,9 +7,13 @@
 
 package com.malinghan.maregistry;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.malinghan.maregistry.cluster.MaRegistryConfigProperties;
 import com.malinghan.maregistry.health.HealthChecker;
 import com.malinghan.maregistry.health.MaHealthChecker;
+import com.malinghan.maregistry.store.FileRegistryStore;
+import com.malinghan.maregistry.store.RegistryStore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,5 +47,11 @@ public class MaRegistryConfig {
     @Bean(initMethod = "start", destroyMethod = "stop")
     public HealthChecker healthChecker() {
         return new MaHealthChecker();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "maregistry", name = "persistence-enabled", havingValue = "true", matchIfMissing = true)
+    public RegistryStore registryStore(ObjectMapper objectMapper, MaRegistryConfigProperties properties) {
+        return new FileRegistryStore(objectMapper, properties);
     }
 }

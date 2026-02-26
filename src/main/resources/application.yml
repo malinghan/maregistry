@@ -5,5 +5,8 @@ spring:
 maregistry:
   server-list:
     - http://localhost:8081
-    - http://localhost:8082
-    - http://localhost:8083
+#    - http://localhost:8082
+#    - http://localhost:8083
+  persistence-enabled: true
+  snapshot-path: ./data/registry-snapshot.json
+  snapshot-interval: 30
